@@ -1,21 +1,21 @@
-id,split,text,reference_label
-1,development,"The administration announced a programme to create 40,000 jobs in manufacturing.",1
-2,development,"The new tax credit is expected to encourage firms to hire workers.",1
-3,test,"Unemployment has fallen for the third consecutive month.",1
-4,development,"The factory closure will eliminate 600 local jobs.",1
-5,development,"The proposal would raise the minimum wage for low-paid workers.",1
-6,test,"The training programme helps displaced workers find new employment.",1
-7,development,"The budget funds a job-training partnership with local colleges.",1
-8,test,"The report tracks vacancies and hours worked across the economy.",1
-9,development,"The overnight job submitted to the computing cluster without errors.",0
-10,development,"This small engine does the job in under a second.",0
-11,test,"The committee has a difficult job before it this week.",0
-12,development,"The school hired a new principal after a long search.",0
-13,development,"Workers repaired the bridge before the winter storms arrived.",0
-14,development,"The President praised the hard work of volunteers in every community.",0
-15,development,"The measure is not expected to reduce unemployment this year.",1
-16,development,"A worker process failed and the job was restarted automatically.",0
-17,test,"Families need stable paychecks and secure work.",1
-18,development,"The agency will employ new software to process applications.",0
-19,test,"The recession left many people without work for months.",1
-20,development,"The task force will work with employers to expand apprenticeships.",1
+id,split,text,reference_label,notes
+1,development,"The administration announced a programme to create 40,000 jobs in manufacturing.",1,Explicit employment creation
+2,development,"The new tax credit is expected to encourage firms to hire workers.",1,Hiring is employment attention
+3,test,"Unemployment has fallen for the third consecutive month.",1,Explicit labour-market condition
+4,development,"The factory closure will eliminate 600 local jobs.",1,Job loss is employment attention
+5,development,"The proposal would raise the minimum wage for low-paid workers.",1,Wages are included in the codebook
+6,test,"The training programme helps displaced workers find new employment.",1,Employment and workers are explicit
+7,development,"The budget funds a job-training partnership with local colleges.",1,Job training is included when linked to employment
+8,test,"The report tracks vacancies and hours worked across the economy.",1,Labour-market indicators
+9,development,"The overnight job submitted to the computing cluster without errors.",0,Computing job
+10,development,"This small engine does the job in under a second.",0,Job means task
+11,test,"The committee has a difficult job before it this week.",0,Job means task
+12,development,"The school hired a new principal after a long search.",0,Hiring is not a labour-market discussion here
+13,development,"Workers repaired the bridge before the winter storms arrived.",0,Workers are not the topic
+14,development,"The President praised the hard work of volunteers in every community.",0,Work is not employment attention
+15,development,"The measure is not expected to reduce unemployment this year.",1,Negation changes the claim, not the topic
+16,development,"A worker process failed and the job was restarted automatically.",0,Technical context
+17,test,"Families need stable paychecks and secure work.",1,Employment security is the topic
+18,development,"The agency will employ new software to process applications.",0,Employ is used as a verb meaning use
+19,test,"The recession left many people without work for months.",1,Employment condition expressed without job
+20,development,"The task force will work with employers to expand apprenticeships.",1,Employment-related training and employers
