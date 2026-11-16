@@ -1,0 +1,142 @@
+---
+title: "Structural Topic Models: A Short Tutorial"
+author: "Text as Data, CEU"
+output: html_document
+---
+
+An LDA model represents each speech as a mixture of topics. A structural topic model (STM) can also use document metadata to model how topic prevalence varies. Here we ask how attention to war and international conflict in State of the Union speeches varies over time, while accounting for the president's party.
+
+## Setup
+
+Install the `stm` and `rmarkdown` packages if needed.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(stm)
+set.seed(2026)
+speeches <- read.csv("sotu.csv", stringsAsFactors = FALSE)
+speeches <- subset(speeches, year >= 1901 & !is.na(text) & nzchar(text) &
+                     party %in% c("Democratic", "Republican"))
+speeches$party <- factor(speeches$party, levels = c("Democratic", "Republican"))
+speeches$year <- as.numeric(speeches$year)
+head(speeches[, c("president", "year", "party")])
+table(speeches$party)
+```
+
+Each document is a speech. The party is the president's party, and observations over time are not independent political experiments. The corpus, preprocessing choices, and document length all affect the results.
+
+## Prepare the documents
+
+`textProcessor` tokenizes, removes common English stopwords and stems words. `prepDocuments` removes rare terms and empty documents. Use the returned metadata, which stays aligned with the retained documents.
+
+```{r prepare, message=FALSE}
+processed <- textProcessor(documents = speeches$text, metadata = speeches,
+                           lowercase = TRUE, removestopwords = TRUE,
+                           removenumbers = TRUE, removepunctuation = TRUE,
+                           stem = TRUE, verbose = FALSE)
+prepared <- prepDocuments(processed$documents, processed$vocab,
+                          processed$meta, lower.thresh = 4, verbose = FALSE)
+documents <- prepared$documents
+vocab <- prepared$vocab
+meta <- prepared$meta
+cat("Retained speeches:", length(documents), "\nVocabulary size:", length(vocab), "\n")
+```
+
+## Fit an STM
+
+We set the number of topics to 10. The prevalence formula lets the expected topic proportions vary with party and a smooth function of year. The model estimates topics and their prevalence jointly. We do not include a content covariate, so the word distribution for a topic is shared across these groups.
+
+```{r fit, message=FALSE}
+model <- stm(documents = documents, vocab = vocab, K = 10,
+             prevalence = ~ party + s(year), data = meta,
+             init.type = "Spectral", max.em.its = 75, verbose = FALSE)
+```
+
+## Interpret topics
+
+Look at both frequent and distinctive words. Then read representative speeches rather than naming a topic from a word list alone.
+
+```{r topics}
+labelTopics(model, n = 8)
+plot(model, type = "summary", n = 5)
+
+# In this fitted model, topic 4 contains war, Soviet, victory, and peace terms.
+# Topic numbers can change across models. Check labelTopics before using this number.
+topic_id <- 4
+examples <- findThoughts(model, texts = meta$text, topics = topic_id, n = 3)
+top_rows <- order(model$theta[, topic_id], decreasing = TRUE)[1:3]
+data.frame(meta[top_rows, c("president", "year", "party")],
+           topic_proportion = round(model$theta[top_rows, topic_id], 3))
+plotQuote(examples$docs[[1]], width = 70, maxwidth = 350)
+```
+
+Topic numbers are arbitrary. Interpret a topic by examining its words and speeches, and check whether it remains recognizable under reasonable choices of preprocessing and topic number.
+
+## How does the topic vary over time?
+
+The following estimates topic proportions as a function of party and year, propagating uncertainty from the fitted topic model. The curve displays the modelled association with year.
+
+```{r effects}
+effects <- estimateEffect(1:10 ~ party + s(year), model, metadata = meta,
+                          uncertainty = "Global")
+plot(effects, covariate = "year", topics = topic_id, model = model,
+     method = "continuous", xlab = "Year",
+     ylab = "Expected topic proportion",
+     main = "War and international conflict over time")
+points(meta$year, model$theta[, topic_id], pch = 16, cex = 0.45,
+       col = adjustcolor("steelblue", alpha.f = 0.4))
+legend("topright", legend = "Estimated proportion in each speech",
+       pch = 16, col = adjustcolor("steelblue", alpha.f = 0.4), bty = "n")
+```
+
+
+
+## Compare parties across all topics
+
+
+```{r party}
+summary(effects, topics = 1:10)
+plot(effects, covariate = "party", topics = 1:10, model = model,
+     method = "difference", cov.value1 = "Republican", cov.value2 = "Democratic",
+     xlab = "Difference in expected topic proportion (Republican - Democratic)",
+     main = "Party associations across topics",
+     labeltype = "prob", n = 3)
+```
+
+
+## Different words within a topic
+
+The prevalence model asks whether a topic is more common in one group. A **content covariate** asks whether the words associated with the same topic vary across groups.
+
+```{r content-model, message=FALSE}
+set.seed(2026)
+content_data <- prepDocuments(documents, vocab, meta, lower.thresh = 20,
+                              verbose = FALSE)
+content_meta <- content_data$meta
+content_model <- stm(documents = content_data$documents, vocab = content_data$vocab, K = 6,
+                     prevalence = ~ party + s(year), content = ~ party,
+                     data = content_meta, init.type = "Spectral",
+                     max.em.its = 25, verbose = FALSE)
+labelTopics(content_model, n = 8)
+```
+
+
+```{r perspectives, fig.width=10, fig.height=6}
+content_topic <- 3 
+plot(content_model, type = "perspectives", topics = content_topic,
+     covarlevels = c("Democratic", "Republican"),
+     plabels = c("Democratic", "Republican"), n = 25)
+```
+
+
+```{r content-documents}
+for (group in levels(content_meta$party)) {
+  rows <- which(content_meta$party == group)
+  top <- rows[order(content_model$theta[rows, content_topic], decreasing = TRUE)[1:2]]
+  cat("\n", group, "\n")
+  print(data.frame(content_meta[top, c("president", "year")],
+                   topic_proportion = round(content_model$theta[top, content_topic], 3)))
+  for (i in top) {
+    cat(substr(gsub("[[:space:]]+", " ", content_meta$text[i]), 1, 400), "...\n\n")
+  }
+}
+```
